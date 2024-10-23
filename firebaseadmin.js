@@ -3,9 +3,9 @@ const serviceAccount = require('./xhamia-ime-8e033-firebase-adminsdk-joivd-1e730
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app'
+  databaseURL: 'https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app',
 });
 
 const db = admin.firestore();
 
-module.exports = db;
+module.exports = { db }; // Only export the database
