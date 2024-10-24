@@ -1,10 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const { sendPushNotification } = require("./notificationService");
-const loadPrayerTimes = require("./database/loadPrayerTimes");
-
-// require("./src/scheduleNotifications");
+const cron = require("node-cron");
+const {
+  schedulePrayerTimeNotifications,
+} = require("./notifications/notificationService");
 
 const app = express();
 app.use(bodyParser.json());
@@ -14,7 +14,7 @@ app.use(cors());
 
 const mosqueRoutes = require("./routes/masjids");
 const prayerTimesRoutes = require("./routes/prayerTimes");
-const paymentRoutes = require("./routes/paymentRoutes"); // Import the payment routes
+const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notifications");
 const userRoutes = require("./routes/users");
 
@@ -24,17 +24,29 @@ app.use("/payments", paymentRoutes);
 app.use("/", notificationRoutes);
 app.use("/users", userRoutes);
 
-// app.post('/send-notification', async (req, res) => {
-//   const { expoPushToken, title, body } = req.body; // Assume push token, title, and body are passed in the request
+app.get("/test-schedule", async (req, res) => {
+  try {
+    await schedulePrayerTimeNotifications();
+    res.send("Prayer time notifications scheduled successfully.");
+  } catch (error) {
+    console.error("Error in manual scheduling:", error);
+    res.status(500).send("Error scheduling notifications.");
+  }
+});
 
-//   try {
-//     await sendPushNotification(expoPushToken, title, body);
-//     res.status(200).send('Notification sent');
-//   } catch (error) {
-//     console.error('Error sending notification:', error);
-//     res.status(500).send('Error sending notification');
-//   }
-// });
+// Cron job to schedule prayer time notifications every day at 00:01
+cron.schedule("1 0 * * *", async () => {
+  console.log(
+    "Cron job started: Scheduling prayer notifications for the day..."
+  );
+
+  try {
+    await schedulePrayerTimeNotifications();
+    console.log("Prayer notifications scheduled successfully.");
+  } catch (error) {
+    console.error("Error scheduling prayer notifications:", error);
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

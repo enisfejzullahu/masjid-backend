@@ -4,7 +4,9 @@ const router = express.Router();
 const firebaseAdmin = require("../firebaseadmin"); // Importing the whole module
 const { db } = firebaseAdmin; // Destructure messaging from the imported object
 
-const { sendPushNotification } = require("../notificationService"); // Import the service
+const {
+  sendPushNotification,
+} = require("../notifications/notificationService"); // Import the service
 
 const app = express();
 
