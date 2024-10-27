@@ -12,7 +12,7 @@ const customMessages = {
   Agimi: {
     title: "Është koha e Agimit!",
     description:
-      "Pejgamberi a.s. tha: 'O Allah, bekoje umetin tim në mëngjeset e tyre.",
+      "Pejgamberi a.s. tha: 'O Allah, bekoje umetin tim në mëngjeset e tyre.'",
   },
   Dreka: {
     title: "Koha për namazin e Drekës",
@@ -71,14 +71,40 @@ const sendPushNotification = async (expoPushToken, title, body) => {
 };
 
 // Function to get user tokens from Firestore
+// const getUserTokens = async () => {
+//   const tokens = [];
+
+//   try {
+//     const usersSnapshot = await db.collection("users").get(); // Adjust to your users collection path
+//     usersSnapshot.forEach((doc) => {
+//       const userData = doc.data();
+//       const token = userData.expoPushToken?.data; // Access the 'data' property of expoPushToken
+//       if (token) tokens.push(token);
+//     });
+
+//     console.log(`Fetched user tokens: ${tokens.length} tokens found`);
+//   } catch (error) {
+//     console.error("Error fetching user tokens from Firestore:", error);
+//   }
+
+//   return tokens;
+// };
+
 const getUserTokens = async () => {
   const tokens = [];
 
   try {
-    const usersSnapshot = await db.collection("users").get(); // Adjust to your users collection path
+    // Fetch all user documents from the "users" collection
+    const usersSnapshot = await db.collection("tokens").get(); // Adjust to your users collection path
+    
+    // Loop through each user document
     usersSnapshot.forEach((doc) => {
       const userData = doc.data();
-      const token = userData.expoPushToken?.data; // Access the 'data' property of expoPushToken
+      
+      // Access the 'expoPushToken' directly, assuming it's stored as a string
+      const token = userData.expoPushToken; 
+      
+      // Push the token into the array if it exists
       if (token) tokens.push(token);
     });
 
@@ -90,6 +116,7 @@ const getUserTokens = async () => {
   return tokens;
 };
 
+
 // Function to schedule notifications for each prayer time
 const schedulePrayerTimeNotifications = async () => {
   const todayPrayerTimes = await getTodayPrayerTimes(); // Fetch today's prayer times
@@ -98,6 +125,7 @@ const schedulePrayerTimeNotifications = async () => {
     console.log("No prayer times available for today.");
     return;
   }
+
 
   const userTokens = await getUserTokens(); // Fetch user tokens
 

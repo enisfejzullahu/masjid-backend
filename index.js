@@ -34,6 +34,11 @@ app.get("/test-schedule", async (req, res) => {
   }
 });
 
+app.get('/test-notifications', async (req, res) => {
+  await schedulePrayerTimeNotifications();
+  res.send('Triggered notification scheduling.');
+});
+
 // Cron job to schedule prayer time notifications every day at 00:01
 cron.schedule("1 0 * * *", async () => {
   console.log(
