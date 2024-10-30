@@ -9,9 +9,7 @@ admin.initializeApp({
     "https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app",
 });
 
-const db = admin.firestore();
 
-// module.exports = { db }; // Only export the database
 
 // const admin = require("firebase-admin");
 // const serviceAccount = require("./xhamia-ime-8e033-firebase-adminsdk-joivd-1e730a6474.json");
@@ -22,7 +20,7 @@ const db = admin.firestore();
 //     "https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app",
 // });
 
-// const db = admin.firestore();
+const db = admin.firestore();
 const realtimeDatabase = admin.database(); // This initializes the Realtime Database
 
 // Example: Fetch prayer times from Realtime Database

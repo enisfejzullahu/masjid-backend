@@ -11,21 +11,59 @@ const {
 const app = express();
 
 // Route for updating notification preference
+// Update the notification preference for a token
 router.post("/update-notification-preference", async (req, res) => {
-  const { token, enabled } = req.body;
+  const { expoPushToken, disabled } = req.body;
+
+  if (!expoPushToken) {
+    return res.status(400).json({ message: "Push token is missing." });
+  }
 
   try {
-    // Assuming the token is the user's ID
-    await db.collection("users").doc("anonymous").update({
-      // Use the correct ID here
-      notificationsEnabled: enabled,
+    await db.collection("tokens").doc(expoPushToken).set(
+      { notificationsDisabled: disabled },
+      { merge: true } // Update only the notificationsDisabled field
+    );
+
+    res.status(200).json({
+      message: `Notification preference updated to ${
+        disabled ? "disabled" : "enabled"
+      }.`,
     });
-    res.status(200).send({ message: "Notification preference updated." });
   } catch (error) {
     console.error("Error updating notification preference:", error);
-    res
-      .status(500)
-      .send({ message: "Error updating notification preference." });
+    res.status(500).json({
+      message: "Error updating notification preference.",
+      error: error.message,
+    });
+  }
+});
+
+// Endpoint to fetch the notification preference
+router.get("/get-notification-preference", async (req, res) => {
+  const { expoPushToken } = req.query;
+
+  if (!expoPushToken) {
+    return res.status(400).json({ message: "Push token is missing." });
+  }
+
+  try {
+    const tokenDoc = await db.collection("tokens").doc(expoPushToken).get();
+
+    if (!tokenDoc.exists) {
+      return res.status(404).json({ message: "Token not found." });
+    }
+
+    const data = tokenDoc.data();
+    const notificationsDisabled = data.notificationsDisabled ?? false;
+
+    res.status(200).json({ notificationsDisabled });
+  } catch (error) {
+    console.error("Error fetching notification preference:", error);
+    res.status(500).json({
+      message: "Error fetching notification preference.",
+      error: error.message,
+    });
   }
 });
 
@@ -41,22 +79,6 @@ router.post("/send-notification", async (req, res) => {
   }
 });
 
-// Endpoint to save push token
-// router.post("/send-notification-token", async (req, res) => {
-//   const { userId, expoPushToken } = req.body;
-
-//   try {
-//     // Update or set the user's expoPushToken in the database
-//     await db
-//       .collection("users")
-//       .doc(userId)
-//       .set({ expoPushToken }, { merge: true });
-//     res.status(200).send("Push token saved successfully.");
-//   } catch (error) {
-//     console.error("Error saving push token:", error);
-//     res.status(500).send("Error saving push token.");
-//   }
-// });
 
 router.post("/check-token", async (req, res) => {
   const { expoPushToken } = req.body;
@@ -84,17 +106,22 @@ router.post("/send-notification-token", async (req, res) => {
 
   try {
     // Firestore generates a unique document ID automatically
-    await db.collection("tokens").doc(expoPushToken).set({
-      expoPushToken,
-      createdAt: new Date(),
-    }, { merge: true }); // Use merge to avoid duplicates
+    await db.collection("tokens").doc(expoPushToken).set(
+      {
+        expoPushToken,
+        notificationsEnabled: true, // Set to true by default
+        createdAt: new Date(),
+      },
+      { merge: true }
+    ); // Use merge to avoid duplicates
 
     res.status(200).json({ message: "Push token saved successfully." });
   } catch (error) {
     console.error("Error saving push token:", error);
-    res.status(500).json({ message: "Error saving push token.", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error saving push token.", error: error.message });
   }
 });
-
 
 module.exports = router;

@@ -32,9 +32,11 @@ const customMessages = {
   },
 };
 
+
+
 // Function to send push notifications
 const sendPushNotification = async (expoPushToken, title, body) => {
-  console.log(`Preparing to send notification to token: ${expoPushToken}`); // Log token being used
+  // console.log(`Preparing to send notification to token: ${expoPushToken}`); // Log token being used
 
   if (!expoPushToken || !expoPushToken.startsWith("ExponentPushToken")) {
     console.error("Invalid push token:", expoPushToken);
@@ -50,9 +52,9 @@ const sendPushNotification = async (expoPushToken, title, body) => {
   };
 
   try {
-    console.log(
-      `Sending notification with title: "${title}" and body: "${body}" to ${expoPushToken}`
-    );
+    // console.log(
+    //   `Sending notification with title: "${title}" and body: "${body}" to ${expoPushToken}`
+    // );
     const tickets = await expo.sendPushNotificationsAsync([message]);
 
     // Log the ticket response
@@ -70,32 +72,13 @@ const sendPushNotification = async (expoPushToken, title, body) => {
   }
 };
 
-// Function to get user tokens from Firestore
-// const getUserTokens = async () => {
-//   const tokens = [];
-
-//   try {
-//     const usersSnapshot = await db.collection("users").get(); // Adjust to your users collection path
-//     usersSnapshot.forEach((doc) => {
-//       const userData = doc.data();
-//       const token = userData.expoPushToken?.data; // Access the 'data' property of expoPushToken
-//       if (token) tokens.push(token);
-//     });
-
-//     console.log(`Fetched user tokens: ${tokens.length} tokens found`);
-//   } catch (error) {
-//     console.error("Error fetching user tokens from Firestore:", error);
-//   }
-
-//   return tokens;
-// };
 
 const getUserTokens = async () => {
   const tokens = [];
 
   try {
-    // Fetch all user documents from the "users" collection
-    const usersSnapshot = await db.collection("tokens").get(); // Adjust to your users collection path
+    // Fetch all user documents from the "tokens" collection
+    const usersSnapshot = await db.collection("tokens").where("notificationsDisabled", "==", false).get(); // Check for notifications enabled
     
     // Loop through each user document
     usersSnapshot.forEach((doc) => {
@@ -117,6 +100,7 @@ const getUserTokens = async () => {
 };
 
 
+
 // Function to schedule notifications for each prayer time
 const schedulePrayerTimeNotifications = async () => {
   const todayPrayerTimes = await getTodayPrayerTimes(); // Fetch today's prayer times
@@ -126,8 +110,11 @@ const schedulePrayerTimeNotifications = async () => {
     return;
   }
 
-
   const userTokens = await getUserTokens(); // Fetch user tokens
+  if (userTokens.length === 0) {
+    console.log("No users have notifications enabled.");
+    return; // Exit if no users are available
+  }
 
   const prayerTimes = [
     { name: "Imsaku", time: todayPrayerTimes.Imsaku },
@@ -145,22 +132,11 @@ const schedulePrayerTimeNotifications = async () => {
     const [hours, minutes] = prayer.time.split(":").map(Number);
 
     // Create a Date object using today's date and the prayer time
-    const prayerTime = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      hours,
-      minutes
-    );
+    const prayerTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
 
     if (prayerTime > now) {
       const delay = prayerTime - now; // Calculate the time difference in milliseconds
-      // console.log(
-      //   `Scheduling notification for ${prayer.name} in ${Math.round(
-      //     delay / 60000
-      //   )} minutes`
-      // );
-
+      
       // Get the custom title and description for the prayer
       const { title, description } = customMessages[prayer.name];
 
@@ -168,10 +144,33 @@ const schedulePrayerTimeNotifications = async () => {
       setTimeout(() => {
         scheduleNotifications(userTokens, title, description);
       }, delay);
+
+      // Optional: Log the scheduling for debugging
+      // console.log(`Scheduled notification for ${prayer.name} in ${Math.round(delay / 60000)} minutes.`);
     } else {
       // console.log(`${prayer.name} has already passed for today.`);
     }
   });
+};
+
+
+const sendNotifications = async (message) => {
+  try {
+    // Query tokens where notifications are not disabled
+    const tokensSnapshot = await db.collection("tokens").where("notificationsDisabled", "==", false).get();
+
+    // Get the expo push tokens from the documents
+    const tokens = tokensSnapshot.docs.map(doc => doc.data().expoPushToken);
+
+    // Send the message to each token
+    for (let expoPushToken of tokens) {
+      await sendPushNotification(expoPushToken, message.title, message.body); 
+    }
+
+    console.log("Notifications sent successfully.");
+  } catch (error) {
+    console.error("Error sending notifications:", error);
+  }
 };
 
 // Function to send notifications to user tokens
@@ -198,5 +197,6 @@ const scheduleNotifications = async (userTokens, title, body) => {
 module.exports = {
   scheduleNotifications,
   sendPushNotification,
-  schedulePrayerTimeNotifications, // Export the new function
+  schedulePrayerTimeNotifications, 
+  sendNotifications,
 };
