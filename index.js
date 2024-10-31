@@ -17,13 +17,13 @@ const mosqueRoutes = require("./routes/masjids");
 const prayerTimesRoutes = require("./routes/prayerTimes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notifications");
-const userRoutes = require("./routes/users");
+const tokenRoutes = require("./routes/tokens");
 
 app.use("/mosques", mosqueRoutes);
 app.use("/prayerTimes", prayerTimesRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/", notificationRoutes);
-app.use("/users", userRoutes);
+app.use("/tokens", tokenRoutes);
 
 
 // app.get('/test-notifications', async (req, res) => {
