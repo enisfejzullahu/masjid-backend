@@ -1,6 +1,5 @@
-
 // --------------------------------------
-// HEROKU RUN 
+// HEROKU RUN
 const admin = require("firebase-admin");
 
 // Parse the service account key from the environment variable
