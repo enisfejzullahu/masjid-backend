@@ -3,10 +3,14 @@ const express = require("express");
 const router = express.Router();
 const firebaseAdmin = require("../firebaseadmin"); // Importing the whole module
 const { db } = firebaseAdmin; // Destructure messaging from the imported object
+const {
+  saveNotificationPreferences, getUserPrayerPreferences
+} = require("../notifications/notificationService");
 
 const {
   sendPushNotification,
 } = require("../notifications/notificationService"); // Import the service
+
 
 const app = express();
 
@@ -79,7 +83,6 @@ router.post("/send-notification", async (req, res) => {
   }
 });
 
-
 router.post("/check-token", async (req, res) => {
   const { expoPushToken } = req.body;
 
@@ -123,5 +126,87 @@ router.post("/send-notification-token", async (req, res) => {
       .json({ message: "Error saving push token.", error: error.message });
   }
 });
+
+router.post("/savePreferences", saveNotificationPreferences);
+
+router.post("/getUserPrayerPreferences", async (req, res) => {
+  const { expoPushToken, mosqueId } = req.body;
+
+  if (!expoPushToken || !mosqueId) {
+    return res.status(400).send({ error: "expoPushToken or mosqueId is missing" });
+  }
+
+  try {
+    // Call the function to get preferences
+    const preferences = await getUserPrayerPreferences(expoPushToken, mosqueId);
+
+    if (preferences === null) {
+      return res.status(404).send({ error: "No preferences found" });
+    }
+
+    res.status(200).send(preferences); // Send preferences back to the frontend
+  } catch (error) {
+    console.error("Error fetching user preferences:", error);
+    res.status(500).send({ error: "Error fetching preferences" });
+  }
+});
+
+// Backend route to update receiveAnnouncements preference
+router.post("/updateAnnouncementPreference", async (req, res) => {
+  const { expoPushToken, mosqueId, receiveAnnouncements } = req.body;
+
+  if (!expoPushToken || !mosqueId || typeof receiveAnnouncements !== "boolean") {
+    return res.status(400).json({ error: "Missing or invalid data." });
+  }
+
+  try {
+    // Reference to the user's specific favorite mosque document
+    const favoriteMosqueRef = db
+      .collection("tokens")
+      .doc(expoPushToken)
+      .collection("favoriteMosques")
+      .doc(mosqueId);
+
+    // Update the receiveAnnouncements field
+    await favoriteMosqueRef.update({
+      receiveAnnouncements: receiveAnnouncements,
+    });
+
+    res.status(200).json({ message: "Announcements preference updated successfully." });
+  } catch (error) {
+    console.error("Error updating announcements preference:", error);
+    res.status(500).json({ error: "Failed to update announcements preference." });
+  }
+});
+
+// Backend route to update receiveEvents preference
+router.post("/updateEventsPreference", async (req, res) => {
+  const { expoPushToken, mosqueId, receiveEvents } = req.body;
+
+  if (!expoPushToken || !mosqueId || typeof receiveEvents !== "boolean") {
+    return res.status(400).json({ error: "Missing or invalid data." });
+  }
+
+  try {
+    // Reference to the user's specific favorite mosque document
+    const favoriteMosqueRef = db
+      .collection("tokens")
+      .doc(expoPushToken)
+      .collection("favoriteMosques")
+      .doc(mosqueId);
+
+    // Update the receiveAnnouncements field
+    await favoriteMosqueRef.update({
+      receiveEvents: receiveEvents,
+    });
+
+    res.status(200).json({ message: "Events preference updated successfully." });
+  } catch (error) {
+    console.error("Error updating events preference:", error);
+    res.status(500).json({ error: "Failed to update events preference." });
+  }
+});
+
+
 
 module.exports = router;

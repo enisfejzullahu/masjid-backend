@@ -25,10 +25,10 @@ app.use("/payments", paymentRoutes);
 app.use("/", notificationRoutes);
 app.use("/tokens", tokenRoutes);
 
-// app.get("/test-notifications", async (req, res) => {
-//   await schedulePrayerTimeNotifications();
-//   res.send("Triggered notification scheduling.");
-// });
+app.get("/test-notifications", async (req, res) => {
+  await schedulePrayerTimeNotifications();
+  res.send("Triggered notification scheduling.");
+});
 
 // Cron job to schedule prayer time notifications every day at 00:01
 cron.schedule(

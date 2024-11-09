@@ -22,21 +22,31 @@ router.post("/addFavorite", async (req, res) => {
     // Reference to the user's document in Firestore
     const userRef = db.collection("tokens").doc(expoPushToken);
 
-    // Add the mosque to the user's favoriteMosques subcollection
+    // Default prayerTimesOffsets structure
+    const defaultPrayerTimesOffsets = {
+      imsaku: { offsetMinutes: 0, receiveNotifications: false },
+      agimi: { offsetMinutes: 0, receiveNotifications: false },
+      dreka: { offsetMinutes: 0, receiveNotifications: false },
+      ikindia: { offsetMinutes: 0, receiveNotifications: false },
+      akshami: { offsetMinutes: 0, receiveNotifications: false },
+      jacia: { offsetMinutes: 0, receiveNotifications: false },
+    };
+
+    // Add the mosque to the user's favoriteMosques subcollection with default settings
     await userRef.collection("favoriteMosques").doc(mosqueId).set({
       receiveAnnouncements: true, // Default setting
       receiveEvents: true, // Default setting
       receivePrayerTimeReminders: true, // Default setting
+      prayerTimesOffsets: defaultPrayerTimesOffsets, // Set the default offsets
     });
 
-    res
-      .status(200)
-      .json({ message: "Mosque added to favorites successfully." });
+    res.status(200).json({ message: "Mosque added to favorites successfully." });
   } catch (error) {
     console.error("Error adding favorite mosque:", error);
     res.status(500).json({ error: "Failed to add mosque to favorites." });
   }
 });
+
 
 router.delete("/removeFavorite", async (req, res) => {
   try {
