@@ -385,8 +385,8 @@ const saveNotificationPreferences = async (req, res) => {
           akshami: { offsetMinutes: 0, receiveNotifications: false },
           jacia: { offsetMinutes: 0, receiveNotifications: false },
         },
-        receiveAnnouncements: settings.receiveMosqueAnnouncements ?? false, // Default to false if undefined
-        receiveEvents: settings.receiveMosqueEvents ?? false, // Default to false if undefined
+        receiveAnnouncements: settings.receiveMosqueAnnouncements ?? true,
+        receiveEvents: settings.receiveMosqueEvents ?? true,
       },
       { merge: true }
     );
