@@ -22,14 +22,29 @@ router.post("/addFavorite", async (req, res) => {
     // Reference to the user's document in Firestore
     const userRef = db.collection("tokens").doc(expoPushToken);
 
+    // Check if the user's document exists
+    const userDoc = await userRef.get();
+
+    // Create the user's document with default settings if it doesn't exist
+    if (!userDoc.exists) {
+      await userRef.set({
+        createdAt: new Date(),
+        defaultSettings: {
+          receiveAnnouncements: true,
+          receiveEvents: true,
+          receivePrayerTimeReminders: true,
+        },
+      });
+    }
+
     // Default prayerTimesOffsets structure
     const defaultPrayerTimesOffsets = {
-      imsaku: { offsetMinutes: 0, receiveNotifications: false },
-      agimi: { offsetMinutes: 0, receiveNotifications: false },
-      dreka: { offsetMinutes: 0, receiveNotifications: false },
-      ikindia: { offsetMinutes: 0, receiveNotifications: false },
-      akshami: { offsetMinutes: 0, receiveNotifications: false },
-      jacia: { offsetMinutes: 0, receiveNotifications: false },
+      imsaku: { offsetMinutes: 0, receive: false },
+      agimi: { offsetMinutes: 0, receive: false },
+      dreka: { offsetMinutes: 0, receive: false },
+      ikindia: { offsetMinutes: 0, receive: false },
+      akshami: { offsetMinutes: 0, receive: false },
+      jacia: { offsetMinutes: 0, receive: false },
     };
 
     // Add the mosque to the user's favoriteMosques subcollection with default settings
@@ -40,13 +55,14 @@ router.post("/addFavorite", async (req, res) => {
       prayerTimesOffsets: defaultPrayerTimesOffsets, // Set the default offsets
     });
 
-    res.status(200).json({ message: "Mosque added to favorites successfully." });
+    res
+      .status(200)
+      .json({ message: "Mosque added to favorites successfully." });
   } catch (error) {
     console.error("Error adding favorite mosque:", error);
     res.status(500).json({ error: "Failed to add mosque to favorites." });
   }
 });
-
 
 router.delete("/removeFavorite", async (req, res) => {
   try {

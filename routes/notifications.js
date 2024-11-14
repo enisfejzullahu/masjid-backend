@@ -112,11 +112,11 @@ router.post("/send-notification-token", async (req, res) => {
     await db.collection("tokens").doc(expoPushToken).set(
       {
         expoPushToken,
-        notificationsEnabled: true, // Set to true by default
+        notificationsDisabled: false, 
         createdAt: new Date(),
       },
       { merge: true }
-    ); // Use merge to avoid duplicates
+    ); 
 
     res.status(200).json({ message: "Push token saved successfully." });
   } catch (error) {

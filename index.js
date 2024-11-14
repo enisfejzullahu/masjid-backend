@@ -4,7 +4,6 @@ const cors = require("cors");
 const cron = require("node-cron");
 const {
   schedulePrayerTimeNotifications,
-  sendNotifications,
 } = require("./notifications/notificationService");
 
 const app = express();

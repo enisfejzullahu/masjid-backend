@@ -378,15 +378,15 @@ const saveNotificationPreferences = async (req, res) => {
       {
         receivePrayerTimeReminders: settings.receivePrayerTimeReminders ?? true,
         prayerTimesOffsets: settings.prayerTimesOffsets || {
-          imsaku: { offsetMinutes: 0, receiveNotifications: false },
-          agimi: { offsetMinutes: 0, receiveNotifications: false },
-          dreka: { offsetMinutes: 0, receiveNotifications: false },
-          ikindia: { offsetMinutes: 0, receiveNotifications: false },
-          akshami: { offsetMinutes: 0, receiveNotifications: false },
-          jacia: { offsetMinutes: 0, receiveNotifications: false },
+          imsaku: { offsetMinutes: 0, receive: false },
+          agimi: { offsetMinutes: 0, receive: false },
+          dreka: { offsetMinutes: 0, receive: false },
+          ikindia: { offsetMinutes: 0, receive: false },
+          akshami: { offsetMinutes: 0, receive: false },
+          jacia: { offsetMinutes: 0, receive: false },
         },
-        receiveAnnouncements: settings.receiveMosqueAnnouncements ?? true,
-        receiveEvents: settings.receiveMosqueEvents ?? true,
+        receiveAnnouncements: settings.receiveAnnouncements ?? true,
+        receiveEvents: settings.receiveEvents ?? true,
       },
       { merge: true }
     );
