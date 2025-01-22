@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const firebaseAdmin = require("../firebaseadmin"); // Importing the whole module
-const { db } = firebaseAdmin; // Destructure messaging from the imported object
+const { db, admin } = firebaseAdmin; // Destructure messaging from the imported object
 const {
   collection,
   getDocs,
@@ -10,6 +10,48 @@ const {
   where,
 } = require("firebase/firestore");
 const jwt = require("jsonwebtoken");
+
+
+
+// Middleware to verify the Firebase token
+const authenticate = async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Extract the token from "Bearer <token>"
+
+  if (!token) {
+    return res.status(401).send("Unauthorized: No token provided");
+  }
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    // console.log("Decoded Token:", decodedToken); // Log the entire decoded token
+    req.user = decodedToken; // Attach the user's details to the request
+    next();
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(401).send("Unauthorized: Invalid token");
+  }
+};
+
+
+const authorize = (req, res, next) => {
+  const { role, mosqueId, fullName } = req.user;
+  console.log("User role:", role);        // Log role
+  console.log("User mosqueId:", mosqueId); // Log mosqueId
+  console.log("Requested mosqueId:", req.params.id); // Log requested mosqueId
+  console.log("Requested Full Name:", fullName); // Log requested mosqueId
+
+
+  if (role !== "mosque-admin") {
+    return res.status(403).send("Forbidden: Insufficient permissions");
+  }
+
+  if (mosqueId !== req.params.id) {
+    return res.status(403).send("Forbidden: Cannot edit this mosque");
+  }
+
+  next();
+};
+
 
 // // Add a new mosque
 // router.post("/", async (req, res) => {
@@ -70,7 +112,7 @@ router.get("/", async (req, res) => {
 });
 
 // Update mosque details
-router.put("/:id", async (req, res) => {
+router.put("/:id", authenticate, authorize, async (req, res) => {
   try {
     const mosqueRef = db.collection("mosques").doc(req.params.id);
     await mosqueRef.update(req.body);

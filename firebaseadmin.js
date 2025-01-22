@@ -1,8 +1,8 @@
 // --------------------------------------
 // HEROKU RUN
-const admin = require("firebase-admin");
+// const admin = require("firebase-admin");
 
-// // Parse the service account key from the environment variable
+// // // Parse the service account key from the environment variable
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
 admin.initializeApp({
@@ -10,12 +10,12 @@ admin.initializeApp({
   databaseURL:
     "https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app",
 });
-// -----------------------------------
+// // -----------------------------------
 
 // ------------------------------------
 // LOCAL HOST RUN
 // const admin = require("firebase-admin");
-// const serviceAccount = require("./xhamia-ime-8e033-firebase-adminsdk-joivd-1e730a6474.json");
+// const serviceAccount = require("./xhamia-ime-8e033-firebase-adminsdk-joivd-b2278d75d1.json");
 
 // admin.initializeApp({
 //   credential: admin.credential.cert(serviceAccount),
@@ -83,8 +83,25 @@ async function assignRoles() {
   console.log("Roles assigned successfully.");
 }
 
+// const setCustomClaims = async (userId, mosqueId, fullName, role) => {
+//   try {
+//     // Set custom claims for the user
+//     await admin.auth().setCustomUserClaims(userId, {
+//       mosqueId: mosqueId,
+//       fullName: fullName,
+//       role: role,
+//     });
+//     console.log("Custom claims set successfully.");
+//   } catch (error) {
+//     console.error("Error setting custom claims:", error);
+//   }
+// };
+
+// setCustomClaims('6KwGdXJdhmV5whwNa5jbuta1fmE2', 'xhamia-test', 'Moll', 'mosque-admin');
+
+
 // Run the function to assign roles
-assignRoles();
+// assignRoles();
 
 async function getUserRole(uid) {
   try {
@@ -98,6 +115,8 @@ async function getUserRole(uid) {
 // Test it with the assigned UIDs
 getUserRole("Kcgvz10JB5Pf2aCPdnqryHOs0Xm1"); // Super-admin
 getUserRole("6KwGdXJdhmV5whwNa5jbuta1fmE2"); // Mosque-admin
+
+
 
 // Run the function to test it
 // getTodayPrayerTimes();
