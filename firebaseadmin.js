@@ -1,27 +1,27 @@
 // --------------------------------------
 // HEROKU RUN
-const admin = require("firebase-admin");
-
-// // Parse the service account key from the environment variable
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL:
-    "https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app",
-});
-// -----------------------------------
-
-// ------------------------------------
-// LOCAL HOST RUN
 // const admin = require("firebase-admin");
-// const serviceAccount = require("./xhamia-ime-8e033-firebase-adminsdk-joivd-1e730a6474.json");
+
+// // // Parse the service account key from the environment variable
+// const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
 // admin.initializeApp({
 //   credential: admin.credential.cert(serviceAccount),
 //   databaseURL:
 //     "https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app",
 // });
+// -----------------------------------
+
+// ------------------------------------
+// LOCAL HOST RUN
+const admin = require("firebase-admin");
+const serviceAccount = require("./xhamia-ime-8e033-firebase-adminsdk-joivd-1e730a6474.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL:
+    "https://xhamia-ime-8e033-default-rtdb.europe-west1.firebasedatabase.app",
+});
 // ---------------------------------------
 
 const db = admin.firestore();
@@ -58,9 +58,50 @@ const getTodayPrayerTimes = async () => {
   }
 };
 
+// Function to set custom roles
+// Function to set custom role claims for a user
+const setRole = async (userId, role) => {
+  try {
+    await admin.auth().setCustomUserClaims(userId, { role });
+    console.log(`Role '${role}' assigned to user: ${userId}`);
+  } catch (error) {
+    console.error("Error setting role:", error);
+    throw new Error("Error setting role");
+  }
+};
+
+async function assignRoles() {
+  const superAdminUid = "Kcgvz10JB5Pf2aCPdnqryHOs0Xm1"; // Replace with UID of super-admin
+  const mosqueAdminUid = "6KwGdXJdhmV5whwNa5jbuta1fmE2"; // Replace with UID of mosque-admin
+
+  // Assign super-admin role
+  await setRole(superAdminUid, "super-admin");
+
+  // Assign mosque-admin role (without mosqueId for now)
+  await setRole(mosqueAdminUid, "mosque-admin");
+
+  console.log("Roles assigned successfully.");
+}
+
+// Run the function to assign roles
+assignRoles();
+
+async function getUserRole(uid) {
+  try {
+    const user = await admin.auth().getUser(uid);
+    console.log(`User role for ${uid}:`, user.customClaims);
+  } catch (error) {
+    console.error("Error fetching user claims:", error.message);
+  }
+}
+
+// Test it with the assigned UIDs
+getUserRole("Kcgvz10JB5Pf2aCPdnqryHOs0Xm1"); // Super-admin
+getUserRole("6KwGdXJdhmV5whwNa5jbuta1fmE2"); // Mosque-admin
+
 // Run the function to test it
 // getTodayPrayerTimes();
 
-// const firebaseAdmin = db;
+const firebaseAdmin = db;
 
-module.exports = { db, getTodayPrayerTimes };
+module.exports = { db, getTodayPrayerTimes, admin };

@@ -9,15 +9,49 @@ const {
   query,
   where,
 } = require("firebase/firestore");
+const jwt = require("jsonwebtoken");
 
-// Add a new mosque
-router.post("/", async (req, res) => {
+// // Add a new mosque
+// router.post("/", async (req, res) => {
+//   try {
+//     const newMosque = req.body;
+//     const docRef = await db.collection("mosques").add(newMosque);
+//     res.status(201).send({ id: docRef.id });
+//   } catch (error) {
+//     res.status(500).send(error);
+//   }
+// });
+router.post("/add-mosque", async (req, res) => {
   try {
-    const newMosque = req.body;
-    const docRef = await db.collection("mosques").add(newMosque);
-    res.status(201).send({ id: docRef.id });
+    const {
+      emri,
+      adresa,
+      imageUrl,
+      kontakti,
+      website,
+      disponueshmeria,
+      customId,
+    } = req.body;
+
+    // Use the custom ID if provided, otherwise fallback to a default generated ID
+    const mosqueRef = db
+      .collection("mosques")
+      .doc(customId || emri.toLowerCase().replace(/\s+/g, "-"));
+
+    // Create a new mosque document with the custom ID
+    await mosqueRef.set({
+      emri,
+      adresa,
+      imageUrl,
+      kontakti,
+      website,
+      disponueshmeria,
+    });
+
+    res.status(201).send({ id: mosqueRef.id });
   } catch (error) {
-    res.status(500).send(error);
+    console.error("Error adding mosque: ", error);
+    res.status(500).send("Error adding mosque");
   }
 });
 
@@ -32,6 +66,30 @@ router.get("/", async (req, res) => {
     res.status(200).send(mosques);
   } catch (error) {
     res.status(500).send(error);
+  }
+});
+
+// Update mosque details
+router.put("/:id", async (req, res) => {
+  try {
+    const mosqueRef = db.collection("mosques").doc(req.params.id);
+    await mosqueRef.update(req.body);
+    res.status(200).send("Mosque updated successfully");
+  } catch (error) {
+    console.error("Error updating mosque:", error);
+    res.status(500).send("Error updating mosque");
+  }
+});
+
+// DELETE mosque details
+router.delete("/:id", async (req, res) => {
+  try {
+    const mosqueRef = db.collection("mosques").doc(req.params.id);
+    await mosqueRef.delete();
+    res.status(200).send("Mosque deleted successfully");
+  } catch (error) {
+    console.error("Error deleting mosque:", error);
+    res.status(500).send("Error deleting mosque");
   }
 });
 
