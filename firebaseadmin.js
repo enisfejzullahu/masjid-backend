@@ -1,8 +1,7 @@
 // --------------------------------------
 // HEROKU RUN
-// const admin = require("firebase-admin");
+const admin = require("firebase-admin");
 
-// // // Parse the service account key from the environment variable
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
 admin.initializeApp({
