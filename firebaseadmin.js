@@ -1,6 +1,7 @@
 // --------------------------------------
 // HEROKU RUN
 const admin = require("firebase-admin");
+const functions = require("firebase-functions");
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
@@ -15,6 +16,8 @@ admin.initializeApp({
 // LOCAL HOST RUN
 // const admin = require("firebase-admin");
 // const serviceAccount = require("./xhamia-ime-8e033-firebase-adminsdk-joivd-b2278d75d1.json");
+// const functions = require('firebase-functions');
+// const cors = require('cors')({ origin: true });  // This allows all domains, but you can restrict it to your domain later.
 
 // admin.initializeApp({
 //   credential: admin.credential.cert(serviceAccount),
@@ -98,14 +101,13 @@ async function assignRoles() {
 
 // setCustomClaims('6KwGdXJdhmV5whwNa5jbuta1fmE2', 'xhamia-test', 'Moll', 'mosque-admin');
 
-
 // Run the function to assign roles
 // assignRoles();
 
 async function getUserRole(uid) {
   try {
     const user = await admin.auth().getUser(uid);
-    console.log(`User role for ${uid}:`, user.customClaims);
+    // console.log(`User role for ${uid}:`, user.customClaims);
   } catch (error) {
     console.error("Error fetching user claims:", error.message);
   }
@@ -115,7 +117,31 @@ async function getUserRole(uid) {
 getUserRole("Kcgvz10JB5Pf2aCPdnqryHOs0Xm1"); // Super-admin
 getUserRole("6KwGdXJdhmV5whwNa5jbuta1fmE2"); // Mosque-admin
 
+// exports.setCustomClaims = functions.https.onRequest((req, res) => {
+//   // Enable CORS
+//   cors(req, res, () => {
+//     // Your existing function logic goes here
 
+//     if (req.method === 'OPTIONS') {
+//       // If this is a preflight request, we respond successfully
+//       res.status(204).send('');
+//       return;
+//     }
+
+//     const uid = req.body.uid;
+//     const claims = req.body.claims;
+
+//     // Set custom claims
+//     admin.auth().setCustomUserClaims(uid, claims)
+//       .then(() => {
+//         return res.status(200).send('Custom claims set successfully');
+//       })
+//       .catch(error => {
+//         console.error('Error setting custom claims:', error);
+//         return res.status(500).send('Error assigning mosque or setting custom claims');
+//       });
+//   });
+// });
 
 // Run the function to test it
 // getTodayPrayerTimes();

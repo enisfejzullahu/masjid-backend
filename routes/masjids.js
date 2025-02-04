@@ -10,48 +10,75 @@ const {
   where,
 } = require("firebase/firestore");
 const jwt = require("jsonwebtoken");
-
-
+const {
+  authenticate,
+  authorize,
+  authorizeSuperAdmin,
+} = require("../authMiddleware");
 
 // Middleware to verify the Firebase token
-const authenticate = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1]; // Extract the token from "Bearer <token>"
+// const authenticate = async (req, res, next) => {
+//   const token = req.headers.authorization?.split(" ")[1]; // Extract the token from "Bearer <token>"
 
-  if (!token) {
-    return res.status(401).send("Unauthorized: No token provided");
-  }
+//   if (!token) {
+//     return res.status(401).send("Unauthorized: No token provided");
+//   }
 
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    // console.log("Decoded Token:", decodedToken); // Log the entire decoded token
-    req.user = decodedToken; // Attach the user's details to the request
-    next();
-  } catch (error) {
-    console.error("Authentication error:", error);
-    res.status(401).send("Unauthorized: Invalid token");
-  }
-};
+//   try {
+//     const decodedToken = await admin.auth().verifyIdToken(token);
+//     // console.log("Decoded Token:", decodedToken); // Log the entire decoded token
+//     req.user = decodedToken; // Attach the user's details to the request
+//     next();
+//   } catch (error) {
+//     console.error("Authentication error:", error);
+//     res.status(401).send("Unauthorized: Invalid token");
+//   }
+// };
 
+// const authorize = (req, res, next) => {
+//   const { role, mosqueId, fullName } = req.user; // Extract user details from the request
+//   const requestedMosqueId = req.params.id; // Get the mosqueId from the request parameters
 
-const authorize = (req, res, next) => {
-  const { role, mosqueId, fullName } = req.user;
-  console.log("User role:", role);        // Log role
-  console.log("User mosqueId:", mosqueId); // Log mosqueId
-  console.log("Requested mosqueId:", req.params.id); // Log requested mosqueId
-  console.log("Requested Full Name:", fullName); // Log requested mosqueId
+//   console.log("User role:", role);
+//   console.log("User mosqueId:", mosqueId);
+//   console.log("Requested mosqueId:", requestedMosqueId);
+//   console.log("Requested Full Name:", fullName);
 
+//   // Allow super-admins to edit any mosque
+//   if (role === "super-admin") {
+//     return next();
+//   }
 
-  if (role !== "mosque-admin") {
-    return res.status(403).send("Forbidden: Insufficient permissions");
-  }
+//   // Ensure mosque-admins have an assigned mosqueId
+//   if (role === "mosque-admin") {
+//     if (!mosqueId) {
+//       return res.status(403).send("Forbidden: mosque-admin must have a mosqueId assigned");
+//     }
 
-  if (mosqueId !== req.params.id) {
-    return res.status(403).send("Forbidden: Cannot edit this mosque");
-  }
+//     // Ensure the mosque-admin can only edit their assigned mosque
+//     if (mosqueId !== requestedMosqueId) {
+//       return res.status(403).send("Forbidden: Cannot edit this mosque");
+//     }
 
-  next();
-};
+//     return next();
+//   }
 
+//   // If the user is neither a super-admin nor a valid mosque-admin
+//   return res.status(403).send("Forbidden: Insufficient permissions");
+// };
+
+// // Middleware to authorize only super-admin to delete mosque
+// const authorizeSuperAdmin = (req, res, next) => {
+//   const { role } = req.user; // Get user role from the request
+
+//   // Allow only super-admin to delete a mosque
+//   if (role === "super-admin") {
+//     return next(); // Proceed to the next middleware (route handler)
+//   }
+
+//   // If the user is not a super-admin, deny access
+//   return res.status(403).send("Forbidden: Only super-admins can delete a mosque");
+// };
 
 // // Add a new mosque
 // router.post("/", async (req, res) => {
@@ -123,8 +150,8 @@ router.put("/:id", authenticate, authorize, async (req, res) => {
   }
 });
 
-// DELETE mosque details
-router.delete("/:id", async (req, res) => {
+// DELETE mosque details (only super-admin can delete)
+router.delete("/:id", authenticate, authorizeSuperAdmin, async (req, res) => {
   try {
     const mosqueRef = db.collection("mosques").doc(req.params.id);
     await mosqueRef.delete();
@@ -583,43 +610,307 @@ router.get("/:id/eventet", async (req, res) => {
 });
 
 // Get the "Historiku" for a specific mosque by ID
-router.get("/:id/historiku", async (req, res) => {
+// router.get("/:id/historiku", async (req, res) => {
+//   const mosqueId = req.params.id;
+
+//   try {
+//     // Get the mosque document to ensure it exists
+//     const mosqueDoc = await db.collection("mosques").doc(mosqueId).get();
+//     if (!mosqueDoc.exists) {
+//       return res.status(404).send("Mosque not found");
+//     }
+
+//     // Get the first document from the 'historiku' subcollection
+//     const historikuSnapshot = await db
+//       .collection("mosques")
+//       .doc(mosqueId)
+//       .collection("historiku")
+//       .limit(1) // Get the first document (if any)
+//       .get();
+
+//     if (historikuSnapshot.empty) {
+//       return res.status(404).send("Historiku not found for this mosque");
+//     }
+
+//     // Assuming there's only one document in 'historiku'
+//     const historikuDoc = historikuSnapshot.docs[0];
+//     const data = historikuDoc.data();
+
+//     // Return the historiku data
+//     res.status(200).send({
+//       id: mosqueDoc.id,
+//       title: data.title,
+//       text: data.text,
+//       image: data.image,
+//       photos: data.photos,
+//     });
+//   } catch (error) {
+//     res.status(500).send("Error fetching historiku: " + error.message);
+//   }
+// });
+// POST: Add Historiku Only If None Exists
+router.post("/:id/historiku", authenticate, authorize, async (req, res) => {
+  const mosqueId = req.params.id;
+  const { title, text, imageUrl, photos } = req.body;
+
+  if (!title || !text || !imageUrl) {
+    return res.status(400).send("Title, text, and imageUrl are required.");
+  }
+
+  try {
+    const historikuCollection = admin
+      .firestore()
+      .collection("mosques")
+      .doc(mosqueId)
+      .collection("historiku");
+
+    const existingHistoriku = await historikuCollection.limit(1).get();
+
+    if (!existingHistoriku.empty) {
+      return res
+        .status(400)
+        .send(
+          "A Historiku document already exists. Please use the PUT endpoint to update it."
+        );
+    }
+
+    const newHistorikuRef = historikuCollection.doc(); // Randomly generated ID
+    await newHistorikuRef.set({
+      title,
+      text,
+      imageUrl,
+      photos: photos || [],
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.status(201).send("Historiku added successfully.");
+  } catch (error) {
+    console.error("Error adding historiku entry:", error);
+    res.status(500).send("Failed to add historiku entry.");
+  }
+});
+
+// PUT: Update the Single Historiku Document
+router.put("/:id/historiku", authenticate, authorize, async (req, res) => {
+  const mosqueId = req.params.id;
+  const { title, text, imageUrl, photos } = req.body;
+
+  if (!title || !text || !imageUrl) {
+    return res.status(400).send("Title, text, and imageUrl are required.");
+  }
+
+  try {
+    const historikuCollection = admin
+      .firestore()
+      .collection("mosques")
+      .doc(mosqueId)
+      .collection("historiku");
+
+    const existingHistoriku = await historikuCollection.limit(1).get();
+
+    if (existingHistoriku.empty) {
+      return res
+        .status(404)
+        .send(
+          "No Historiku found. Please use the POST endpoint to create one."
+        );
+    }
+
+    const historikuDoc = existingHistoriku.docs[0];
+    await historikuCollection.doc(historikuDoc.id).set(
+      {
+        title,
+        text,
+        imageUrl,
+        photos: photos || [],
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true } // Merge fields instead of overwriting completely
+    );
+
+    res.status(200).send("Historiku updated successfully.");
+  } catch (error) {
+    console.error("Error updating historiku entry:", error);
+    res.status(500).send("Failed to update historiku entry.");
+  }
+});
+
+// GET Historiku Entries
+router.get("/:id/historiku", authenticate, authorize, async (req, res) => {
   const mosqueId = req.params.id;
 
   try {
-    // Get the mosque document to ensure it exists
-    const mosqueDoc = await db.collection("mosques").doc(mosqueId).get();
-    if (!mosqueDoc.exists) {
-      return res.status(404).send("Mosque not found");
-    }
-
-    // Get the first document from the 'historiku' subcollection
-    const historikuSnapshot = await db
+    const historikuSnapshot = await admin
+      .firestore()
       .collection("mosques")
       .doc(mosqueId)
       .collection("historiku")
-      .limit(1) // Get the first document (if any)
       .get();
 
     if (historikuSnapshot.empty) {
-      return res.status(404).send("Historiku not found for this mosque");
+      return res.status(404).send("No historiku entries found.");
     }
 
-    // Assuming there's only one document in 'historiku'
-    const historikuDoc = historikuSnapshot.docs[0];
-    const data = historikuDoc.data();
+    const historiku = historikuSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-    // Return the historiku data
-    res.status(200).send({
-      id: mosqueDoc.id,
-      title: data.title,
-      text: data.text,
-      image: data.image,
-      photos: data.photos,
-    });
+    res.status(200).json(historiku);
   } catch (error) {
-    res.status(500).send("Error fetching historiku: " + error.message);
+    console.error("Error fetching historiku entries:", error);
+    res.status(500).send("Failed to fetch historiku entries.");
   }
 });
+
+// DELETE Historiku Entry
+router.delete(
+  "/:id/historiku/:historikuId",
+  authenticate,
+  authorize,
+  async (req, res) => {
+    const mosqueId = req.params.id;
+    const historikuId = req.params.historikuId;
+
+    try {
+      const historikuRef = admin
+        .firestore()
+        .collection("mosques")
+        .doc(mosqueId)
+        .collection("historiku")
+        .doc(historikuId);
+
+      await historikuRef.delete();
+      res.status(200).send("Historiku entry deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting historiku entry:", error);
+      res.status(500).send("Failed to delete historiku entry.");
+    }
+  }
+);
+
+// Announcements
+router.post("/:id/njoftimet", authenticate, authorize, async (req, res) => {
+  const mosqueId = req.params.id;
+  const { title, text, datePosted, imageUrl } = req.body;
+
+  if (!title || !text || !datePosted) {
+    return res.status(400).send("Title, text, and datePosted are required.");
+  }
+
+  try {
+    const announcementsCollection = admin
+      .firestore()
+      .collection("mosques")
+      .doc(mosqueId)
+      .collection("njoftimet");
+
+    const newAnnouncementRef = announcementsCollection.doc();
+    await newAnnouncementRef.set({
+      title,
+      text,
+      datePosted,
+      imageUrl: imageUrl || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.status(201).send("Announcement added successfully.");
+  } catch (error) {
+    console.error("Error adding announcement:", error);
+    res.status(500).send("Failed to add announcement.");
+  }
+});
+
+router.get("/:id/njoftimet", authenticate, authorize, async (req, res) => {
+  const mosqueId = req.params.id;
+
+  try {
+    const announcementsSnapshot = await admin
+      .firestore()
+      .collection("mosques")
+      .doc(mosqueId)
+      .collection("njoftimet")
+      .get();
+
+    if (announcementsSnapshot.empty) {
+      return res.status(404).send("No announcements found.");
+    }
+
+    const announcements = announcementsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.status(200).json(announcements);
+  } catch (error) {
+    console.error("Error fetching announcements:", error);
+    res.status(500).send("Failed to fetch announcements.");
+  }
+});
+
+// PUT request to update an announcement
+router.put(
+  "/:id/njoftimet/:announcementId",
+  authenticate,
+  authorize,
+  async (req, res) => {
+    const mosqueId = req.params.id;
+    const announcementId = req.params.announcementId;
+    const updatedData = req.body;
+
+    try {
+      const announcementRef = admin
+        .firestore()
+        .collection("mosques")
+        .doc(mosqueId)
+        .collection("njoftimet")
+        .doc(announcementId);
+
+      const announcementSnapshot = await announcementRef.get();
+
+      if (!announcementSnapshot.exists) {
+        return res.status(404).send("Announcement not found.");
+      }
+
+      await announcementRef.update(updatedData);
+      res.status(200).send("Announcement updated successfully.");
+    } catch (error) {
+      console.error("Error updating announcement:", error);
+      res.status(500).send("Failed to update announcement.");
+    }
+  }
+);
+
+// DELETE request to delete an announcement
+router.delete(
+  "/:id/njoftimet/:announcementId",
+  authenticate,
+  authorize,
+  async (req, res) => {
+    const mosqueId = req.params.id;
+    const announcementId = req.params.announcementId;
+
+    try {
+      const announcementRef = admin
+        .firestore()
+        .collection("mosques")
+        .doc(mosqueId)
+        .collection("njoftimet")
+        .doc(announcementId);
+
+      const announcementSnapshot = await announcementRef.get();
+
+      if (!announcementSnapshot.exists) {
+        return res.status(404).send("Announcement not found.");
+      }
+
+      await announcementRef.delete();
+      res.status(200).send("Announcement deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting announcement:", error);
+      res.status(500).send("Failed to delete announcement.");
+    }
+  }
+);
 
 module.exports = router;

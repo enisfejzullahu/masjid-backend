@@ -18,6 +18,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notifications");
 const tokenRoutes = require("./routes/tokens");
 const roleRoutes = require("./routes/roles");
+const usersRoutes = require("./routes/users")
 
 const { checkRole } = require("./routes/roles");
 const assignRolesRoutes = require("./routes/assignRoles"); // The route for assigning roles
@@ -27,6 +28,7 @@ app.use("/prayerTimes", prayerTimesRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/", notificationRoutes);
 app.use("/tokens", tokenRoutes);
+app.use("/", usersRoutes);
 // Use the routes for assigning roles
 app.use("/roles", assignRolesRoutes);
 

@@ -18,6 +18,27 @@ router.post("/assign-role", async (req, res) => {
   }
 });
 
+router.post("/setCustomClaims", async (req, res) => {
+  const { uid, mosqueId, fullName, role } = req.body;
+
+  if (!uid || !mosqueId || !fullName || !role) {
+    return res.status(400).send("Missing required fields");
+  }
+
+  try {
+    // Set custom claims for the user
+    await admin.auth().setCustomUserClaims(uid, {
+      mosqueId,
+      fullName,
+      role,
+    });
+    return res.status(200).send("Custom claims set successfully");
+  } catch (error) {
+    console.error("Error setting custom claims:", error);
+    return res.status(500).send("Error setting custom claims");
+  }
+});
+
 // Route to get the role of a user by UID
 router.get("/get-role/:uid", async (req, res) => {
   const { uid } = req.params;
