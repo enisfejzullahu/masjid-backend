@@ -16,8 +16,8 @@ admin.initializeApp({
 // LOCAL HOST RUN
 // const admin = require("firebase-admin");
 // const serviceAccount = require("./xhamia-ime-8e033-firebase-adminsdk-joivd-b2278d75d1.json");
-// const functions = require('firebase-functions');
-// const cors = require('cors')({ origin: true });  // This allows all domains, but you can restrict it to your domain later.
+// const functions = require("firebase-functions");
+// const cors = require("cors")({ origin: true }); // This allows all domains, but you can restrict it to your domain later.
 
 // admin.initializeApp({
 //   credential: admin.credential.cert(serviceAccount),

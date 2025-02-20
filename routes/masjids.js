@@ -736,7 +736,7 @@ router.put("/:id/historiku", authenticate, authorize, async (req, res) => {
 });
 
 // GET Historiku Entries
-router.get("/:id/historiku", authenticate, authorize, async (req, res) => {
+router.get("/:id/historiku", async (req, res) => {
   const mosqueId = req.params.id;
 
   try {
